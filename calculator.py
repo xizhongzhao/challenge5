@@ -2,6 +2,7 @@
 
 import sys
 from multiprocessing import Queue,Process,Lock
+from datetime import datetime
 
 class Config(object):
     def __init__(self,configfile):
@@ -119,7 +120,12 @@ def outfile(arg):
             file.write(lis[0])
             for i in lis[1:]:
                 file.write(','+'{:.2f}'.format(i))
+            t = datetime.now()
+            t_str = datetime.strftime(t,'%Y-%m-%d %H:%M:%S')
+            file.write(',' + t_str)
             file.write('\n')
+           
+            
         if que2.empty():
             break     
 if __name__ == '__main__': 
