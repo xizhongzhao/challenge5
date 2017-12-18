@@ -3,27 +3,35 @@
 import sys
 from multiprocessing import Queue,Process,Lock
 from datetime import datetime
+import getopt
+import configparser
 
 class Config(object):
-    def __init__(self,configfile):
-        self._configfile = configfile
-
+    def __init__(self,filename,arg='DEFAULT'):
+        self._filename = filename
+        self._arg = arg
+        self._obj = configparser.ConfigParser(strict=False)
+        self._obj.read(self._filename)
+    
     @property
-    def config(self):
-        config = {}
-        with open(self._configfile,'r') as file:
-            for line in file:
-                s = line.split('=')
-                fkey = s[0].strip()
-                fvalue = s[1].strip()
-                config[fkey] = float(fvalue)
-        return config 
-
+    def basel(self):
+        return self._obj.getfloat(self._arg,'JiShuL')
+    
+    @property
+    def baseh(self):
+        return self._obj.getfloat(self._arg,'JiShuH')
+  
+    @property
+    def soinsurp(self):
+        sum = 0
+        for i in ['YangLao','GongJiJin','ShengYu','GongShang','ShiYe','YiLiao']:
+            sum += self._obj.getfloat(self._arg,i)
+        return sum
 
 class UserData(object):
     def __init__(self,userdatafile):
         self._userdatafile = userdatafile
-    
+   
     @property 
     def userdata(self):
         userdata = {}
@@ -78,22 +86,13 @@ class Salary(object):
     @property
     def aftax(self):
         return self._bftax - self.soinsur - self.pitax                          
-class Argument(object):
-    def __init__(self,arg):
-        self._arg = arg
-    @property
-    def ne_arg(self):
-        arglist = sys.argv[1:]
-        arg_index =arglist.index(self._arg)
-        return arglist[arg_index + 1]
-
+ 
 que1 = Queue()
 que2 = Queue()
 
 def putdata(arg,lock):
-     _argument = Argument(arg)
      g = [ (k,v) for k,v in\
-     UserData(_argument.ne_arg).\
+     UserData(arg).\
      userdata.items()]
      for i in g:
         with lock:
@@ -113,10 +112,9 @@ def comp_func(soinsurp,basel,baseh,lock):
 
 
 def outfile(arg):
-    _argument = Argument(arg)
     while True:
         lis = que2.get()       
-        with open(_argument.ne_arg,'a') as file:
+        with open(arg,'w') as file:
             file.write(lis[0])
             for i in lis[1:]:
                 file.write(','+'{:.2f}'.format(i))
@@ -124,32 +122,58 @@ def outfile(arg):
             t_str = datetime.strftime(t,'%Y-%m-%d %H:%M:%S')
             file.write(',' + t_str)
             file.write('\n')
-           
-            
         if que2.empty():
-            break     
-if __name__ == '__main__': 
+            break 
+
+def usage():
+    line1= '-h --help print the man of the pramg'
+    line2= '-C cityname -c configfile -d userdatafile -o outputfile'
+    print(line1)
+    print(line2)
+
+def optscheck():
     try:
-        arglist = sys.argv[1:]
-        if len(arglist) ==6 and '-c' in arglist and\
-        '-d' in arglist and '-o' in arglist:
-            argc = Argument('-c')
-            config_argc = Config(argc.ne_arg)
-            soinsurp = config_argc.config['ShengYu'] + config_argc.config['YangLao'] + config_argc.config['YiLiao'] + config_argc.config['GongJiJin'] + config_argc.config['GongShang'] + config_argc.config['ShiYe']
-            basel = config_argc.config['JiShuL']
-            baseh = config_argc.config['JiShuH']
-            lo1 = Lock()
-            lo2 = Lock()
-            Process(target=putdata,args=('-d',lo1)).start()
-            Process(target=comp_func,args=(soinsurp,basel,baseh,lo2)).start()
-            #print(que2.get())
-            Process(target=outfile,args=('-o',)).start()
-            #    if que1.empty():
-            #        break
-        else:  
-             raise "Parameter Error"
+        opts,args = getopt.getopt(sys.argv[1:],'ho:c:d:C:',["--help",])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2)
+    cityname = 'DEFAULT'
+    #conffina is configure file name
+    conffina = None
+    outfile  = None
+    userfile = None
+    for o,a in opts:
+        if o in ("-h","--help"):
+            usage()
+            sys.exit()
+        elif o in ('-c','-d','-o'):    
+            confina = a
+            userfile = a
+            outfile = a
+            config = Config(confina)
+        elif o in ('-C','-c','-d','-o'):
+            cityname = a
+            confina = a
+            userfile = a
+            outputfile = a
+            config = Config(confina,cityname.upper())
+        else:
+            raise ParameterError
+def main():
+    try:
+        if len(sys.argv[1:]) in [1,3,4]:
+            optscheck()
+        elif len(sys.argv[1:]) == 0:
+            usage()
+            sys.exit(2)
+        else:
+            raise ParameterError
     except:
-        print("Parameter Error")
-   
-        
-  
+        print( ParameterError)
+        sys.exit(2)
+     
+ 
+            
+if __name__ == '__main__': 
+    main()
