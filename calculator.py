@@ -40,7 +40,7 @@ class UserData(object):
                 s = line.split(',')
                 fkey = s[0].strip()
                 fvalue = s[1].strip()
-                userdata[fkey] = float(fvalue)
+                userdata[fkey] = int(fvalue)
         return userdata
     
       
@@ -55,7 +55,6 @@ class Salary(object):
         self._soinsurp = soinsurp
         self._basel = basel
         self._baseh = baseh
-
     @property 
     def soinsur(self):
         if self._bftax <= self._basel:
@@ -91,12 +90,11 @@ class Salary(object):
 que1 = Queue()
 que2 = Queue()
 
-def putda_func(arg,lock):
-    #
-    user_inst = UserData(arg)
-    g = [ (k,v) for k,v in\
-     user_inst.userdata.items()]
-    for i in g:
+def putdata(arg,lock):
+     g = [ (k,v) for k,v in\
+     UserData(arg).\
+     userdata.items()]
+     for i in g:
         with lock:
             que1.put(i)
 
@@ -113,10 +111,10 @@ def comp_func(soinsurp,basel,baseh,lock):
                 break
 
 
-def outfi_func(arg):
+def outfile(arg):
     while True:
         lis = que2.get()       
-        with open(arg,'a') as file:
+        with open(arg,'w') as file:
             file.write(lis[0])
             for i in lis[1:]:
                 file.write(','+'{:.2f}'.format(i))
@@ -128,54 +126,54 @@ def outfi_func(arg):
             break 
 
 def usage():
-    line1= '-h --help print the man of the pargamer'
+    line1= '-h --help print the man of the pramg'
     line2= '-C cityname -c configfile -d userdatafile -o outputfile'
     print(line1)
     print(line2)
 
-
-def main():
+def optscheck():
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'c:o:d:C:h',['--help',])
+        opts,args = getopt.getopt(sys.argv[1:],'ho:c:d:C:',["--help",])
     except getopt.GetoptError as err:
         print(err)
         usage()
         sys.exit(2)
-   
-    cityname = 'DEFAULT'   
+    cityname = 'DEFAULT'
+    #conffina is configure file name
+    conffina = None
+    outfile  = None
     userfile = None
-    configfile = None
-    outfile = None
-
     for o,a in opts:
         if o in ("-h","--help"):
             usage()
             sys.exit()
-        try:
-            if o == '-o':
-                 outfile = a
-            elif o == '-C':
-                 cityname = a
-            elif o == '-d':
-                 userfile = a
-            elif o == '-c':
-                 configfile = a 
-            else:         
-                 raise ParatermeterError
-        except:
-            usage()
-            print("Paramter Error")
-            sys.exit(2)
+        elif o in ('-c','-d','-o'):    
+            confina = a
+            userfile = a
+            outfile = a
+            config = Config(confina)
+        elif o in ('-C','-c','-d','-o'):
+            cityname = a
+            confina = a
+            userfile = a
+            outputfile = a
+            config = Config(confina,cityname.upper())
+        else:
+            raise ParameterError
+def main():
     try:
-        config = Config(configfile,cityname)
-        lo1 = Lock()
-        lo2 = Lock()
-        Process(target=putda_func,args=(userfile,lo1)).start()
-        Process(target=comp_func, args=(config.soinsurp,\
-        config.basel,config.baseh,lo2)).start()
-        Process(target=outfi_func, args=(outfile,)).start()
+        if len(sys.argv[1:]) in [1,3,4]:
+            optscheck()
+        elif len(sys.argv[1:]) == 0:
+            usage()
+            sys.exit(2)
+        else:
+            raise ParameterError
     except:
-        print("Paramter Error")
+        print( ParameterError)
+        sys.exit(2)
+     
+ 
             
 if __name__ == '__main__': 
     main()
