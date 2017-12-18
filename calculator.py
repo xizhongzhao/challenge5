@@ -145,28 +145,32 @@ def main():
     userfile = None
     configfile = None
     outfile = None
-    for o,a in opts:
-        if o in ("-h","--help"):
-            usage()
-            sys.exit()
-        elif o == '-o':
-            outfile = a
-        elif o == '-C':
-            cityname = a
-        elif o == '-d':
-            userfile = a
-        elif o == '-c':
-            configfile = a
-        else:         
-            assert False, "unhadled option"
-    config = Config(configfile,cityname)
-    lo1 = Lock()
-    lo2 = Lock()
-    Process(target=putda_func,args=(userfile,lo1)).start()
-    Process(target=comp_func, args=(config.soinsurp,\
-    config.basel,config.baseh,lo2)).start()
-    Process(target=outfi_func, args=(outfile,)).start()
-   
+    try:
+        for o,a in opts:
+            if o in ("-h","--help"):
+                usage()
+                sys.exit()
+            elif o == '-o':
+                outfile = a
+            elif o == '-C':
+                cityname = a
+            elif o == '-d':
+                userfile = a
+            elif o == '-c':
+                configfile = a 
+            else:         
+                raise ParatermeterError
+        config = Config(configfile,cityname)
+        lo1 = Lock()
+        lo2 = Lock()
+        Process(target=putda_func,args=(userfile,lo1)).start()
+        Process(target=comp_func, args=(config.soinsurp,\
+        config.basel,config.baseh,lo2)).start()
+        Process(target=outfi_func, args=(outfile,)).start()
+    except:
+        print("ParatermeterError")
+        usage()
+        sys.exit(2)
             
 if __name__ == '__main__': 
     main()
