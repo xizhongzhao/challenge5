@@ -141,25 +141,32 @@ def main():
         print(err)
         usage()
         sys.exit(2)
+   
     cityname = 'DEFAULT'   
     userfile = None
     configfile = None
     outfile = None
-    try:
-        for o,a in opts:
-            if o in ("-h","--help"):
-                usage()
-                sys.exit()
-            elif o == '-o':
-                outfile = a
+
+    for o,a in opts:
+        if o in ("-h","--help"):
+            usage()
+            sys.exit()
+        try:
+            if o == '-o':
+                 outfile = a
             elif o == '-C':
-                cityname = a
+                 cityname = a
             elif o == '-d':
-                userfile = a
+                 userfile = a
             elif o == '-c':
-                configfile = a 
+                 configfile = a 
             else:         
-                raise ParatermeterError
+                 raise ParatermeterError
+        except:
+            usage()
+            print("Paramter Error")
+            sys.exit(2)
+    try:
         config = Config(configfile,cityname)
         lo1 = Lock()
         lo2 = Lock()
@@ -168,9 +175,7 @@ def main():
         config.basel,config.baseh,lo2)).start()
         Process(target=outfi_func, args=(outfile,)).start()
     except:
-        print("ParatermeterError")
-        usage()
-        sys.exit(2)
+        print("Paramter Error")
             
 if __name__ == '__main__': 
     main()
